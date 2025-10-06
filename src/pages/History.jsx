@@ -28,18 +28,18 @@ export default function History() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
       <Navbar />
 
       <div className="max-w-4xl mx-auto p-6 mt-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-colors">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <HistoryIcon className="w-8 h-8 text-white" />
                 <div>
-                  <h1 className="text-2xl font-bold text-white">Scan History</h1>
-                  <p className="text-blue-100 mt-1">View all your scanned QR codes</p>
+                  <h1 className="text-2xl font-bold text-white dark:text-gray-100">Scan History</h1>
+                  <p className="text-blue-100 dark:text-blue-200 mt-1">View all your scanned QR codes</p>
                 </div>
               </div>
               {scanHistory.length > 0 && (
@@ -57,29 +57,29 @@ export default function History() {
                 <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <HistoryIcon className="w-12 h-12 text-gray-400" />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-700 mb-2">No Scan History</h3>
-                <p className="text-gray-500">Your scanned QR codes will appear here</p>
+                <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No Scan History</h3>
+                <p className="text-gray-500 dark:text-gray-400">Your scanned QR codes will appear here</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {scanHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                    className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4 hover:shadow-md transition-all"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <StatusBadge status={item.status} />
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
                             <Calendar className="w-4 h-4" />
-                            <span>{new Date(item.timestamp).toLocaleString()}</span>
+                            <span className="dark:text-gray-300">{new Date(item.timestamp).toLocaleString()}</span>
                           </div>
                         </div>
 
-                        <div className="bg-white rounded-lg p-3 border border-gray-200">
-                          <p className="text-sm text-gray-500 mb-1">Content:</p>
-                          <p className="text-gray-900 break-all font-mono text-sm">{item.text}</p>
+                        <div className="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600 transition-colors">
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Content:</p>
+                          <p className="text-gray-900 dark:text-gray-100 break-all font-mono text-sm">{item.text}</p>
                         </div>
 
                         {item.text.startsWith('http') && (

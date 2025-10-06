@@ -109,17 +109,17 @@ export default function Scanner() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
       <Navbar />
 
       <div className="max-w-2xl mx-auto p-6 mt-8">
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-colors">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
-            <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-white dark:text-gray-100 flex items-center gap-3">
               <Camera className="w-8 h-8" />
               Secure QR Scanner
             </h1>
-            <p className="text-blue-100 mt-2">Scan QR codes safely and securely</p>
+            <p className="text-blue-100 dark:text-blue-200 mt-2">Scan QR codes safely and securely</p>
           </div>
 
           <div className="p-6">
@@ -138,7 +138,7 @@ export default function Scanner() {
                 <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Camera className="w-12 h-12 text-blue-600" />
                 </div>
-                <p className="text-gray-600 mb-6">Click the button below to start scanning</p>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Click the button below to start scanning</p>
                 <Button onClick={startScanning} className="w-full sm:w-auto">
                   Start Scanning
                 </Button>
@@ -160,20 +160,20 @@ export default function Scanner() {
 
             {scanResult && (
               <div className="space-y-4">
-                <div className="bg-gray-50 border-2 border-gray-200 rounded-lg p-6">
+                <div className="bg-gray-50 dark:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 rounded-lg p-6 transition-colors">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-800">Scan Result</h3>
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white">Scan Result</h3>
                     <StatusBadge status={scanResult.status} />
                   </div>
 
-                  <div className="bg-white rounded-lg p-4 border border-gray-200">
-                    <p className="text-sm text-gray-500 mb-1">Decoded Content:</p>
-                    <p className="text-gray-900 break-all font-mono text-sm">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-600 transition-colors">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Decoded Content:</p>
+                    <p className="text-gray-900 dark:text-gray-100 break-all font-mono text-sm">
                       {scanResult.text}
                     </p>
                   </div>
 
-                  <div className="mt-3 text-xs text-gray-500">
+                  <div className="mt-3 text-xs text-gray-500 dark:text-gray-400">
                     Scanned at: {new Date(scanResult.timestamp).toLocaleString()}
                   </div>
                 </div>
@@ -200,7 +200,7 @@ export default function Scanner() {
           </div>
         </div>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-center text-sm text-gray-600 dark:text-gray-300">
           <p>Your camera feed is processed locally in your browser.</p>
           <p>No data is sent to external servers during scanning.</p>
         </div>
