@@ -1,4 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import axios from 'axios';
+import { config } from '../config';
 
 const AuthContext = createContext();
 
@@ -7,36 +9,81 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) {
-      setUser(JSON.parse(savedUser));
+    const token = localStorage.getItem('token');
+    if (token) {
+      // Set axios default header
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      // Fetch user data
+      checkAuth();
+    } else {
+      // Check if user is guest
+      const savedUser = localStorage.getItem('user');
+      if (savedUser) {
+        const userData = JSON.parse(savedUser);
+        if (userData.isGuest) {
+          setUser(userData);
+        }
+      }
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
-  const login = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const checkAuth = async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/auth/me`);
+      setUser(response.data);
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      localStorage.removeItem('token');
+      delete axios.defaults.headers.common['Authorization'];
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const signup = (userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+  const login = async (email, password) => {
+    try {
+      const response = await axios.post(`${config.apiUrl}/auth/login`, { email, password });
+      const { token, user: userData } = response.data;
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error('Login failed:', error);
+      return { success: false, error: error.response?.data?.message || 'Login failed' };
+    }
+  };
+
+  const signup = async (fullName, email, password) => {
+    try {
+      const response = await axios.post(`${config.apiUrl}/auth/signup`, { fullName, email, password });
+      const { token, user: userData } = response.data;
+      localStorage.setItem('token', token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      setUser(userData);
+      return { success: true };
+    } catch (error) {
+      console.error('Signup failed:', error);
+      return { success: false, error: error.response?.data?.message || 'Signup failed' };
+    }
   };
 
   const loginAsGuest = () => {
     const guestUser = {
       fullName: 'Guest User',
-      email: 'guest@example.com',
+      email: 'guest@guest.com',
       isGuest: true,
     };
     setUser(guestUser);
-    localStorage.setItem('user', JSON.stringify(guestUser));
+    // No token for guest
+    return { success: true };
   };
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    delete axios.defaults.headers.common['Authorization'];
   };
 
   return (

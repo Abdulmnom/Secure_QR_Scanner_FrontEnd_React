@@ -1,17 +1,42 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Shield } from 'lucide-react';
+import axios from 'axios';
+import { config } from '../config';
 import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 
 export default function Profile() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [profileUser, setProfileUser] = useState(null);
+
+  useEffect(() => {
+    if (user && !user.isGuest) {
+      fetchProfile();
+    } else if (user && user.isGuest) {
+      setProfileUser(user);
+    }
+  }, [user]);
+
+  const fetchProfile = async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}/auth/me`);
+      setProfileUser(response.data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      // Fallback to stored user data
+      setProfileUser(user);
+    }
+  };
 
   if (!user || user.isGuest) {
     navigate('/login');
     return null;
   }
+
+  const displayUser = profileUser || user;
 
   const handleLogout = () => {
     logout();
@@ -30,7 +55,7 @@ export default function Profile() {
                 <User className="w-10 h-10 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white dark:text-gray-100">{user.fullName}</h1>
+                <h1 className="text-3xl font-bold text-white dark:text-gray-100">{displayUser.fullName}</h1>
                 <p className="text-blue-100 dark:text-blue-200 mt-1">User Profile</p>
               </div>
             </div>
@@ -46,7 +71,7 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Full Name</p>
-                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{user.fullName}</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{displayUser.fullName}</p>
                 </div>
               </div>
 
@@ -56,7 +81,7 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Email Address</p>
-                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{user.email}</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{displayUser.email}</p>
                 </div>
               </div>
 

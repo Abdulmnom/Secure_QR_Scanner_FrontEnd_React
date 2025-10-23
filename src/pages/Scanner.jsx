@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
-import { Camera, XCircle } from 'lucide-react';
+import { Camera, XCircle, Upload } from 'lucide-react';
+import jsQR from 'jsqr';
+import axios from 'axios';
+import { config } from '../config';
 import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import Button from '../components/Button';
@@ -9,6 +12,8 @@ export default function Scanner() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const scannerRef = useRef(null);
 
   useEffect(() => {
@@ -20,35 +25,40 @@ export default function Scanner() {
     };
   }, []);
 
-  const analyzeSafety = (text) => {
-    const suspiciousPatterns = [
-      /javascript:/i,
-      /data:/i,
-      /vbscript:/i,
-    ];
+  const checkSafetyAndSave = async (text) => {
+    setIsProcessing(true);
+    try {
+      // Check safety
+      const scanResponse = await axios.post(`${config.apiUrl}/scan`, { url: text });
+      const status = scanResponse.data.status;
 
-    for (const pattern of suspiciousPatterns) {
-      if (pattern.test(text)) {
-        return 'suspicious';
+      // Save to history only if user is authenticated (not guest)
+      const token = localStorage.getItem('token');
+      if (token) {
+        const timestamp = new Date().toISOString();
+        await axios.post(`${config.apiUrl}/history`, { url: text, status, timestamp });
       }
+
+      return { text, status, timestamp: new Date().toISOString() };
+    } catch (error) {
+      console.error('Error checking safety or saving:', error);
+      // Fallback to local analysis if API fails
+      const suspiciousPatterns = [
+        /javascript:/i,
+        /data:/i,
+        /vbscript:/i,
+      ];
+      const status = suspiciousPatterns.some(pattern => pattern.test(text)) ? 'suspicious' : 'safe';
+      return { text, status, timestamp: new Date().toISOString() };
+    } finally {
+      setIsProcessing(false);
     }
-
-    return 'safe';
-  };
-
-  const saveScanToHistory = (result) => {
-    const scanHistory = JSON.parse(localStorage.getItem('scanHistory') || '[]');
-    const newScan = {
-      id: Date.now(),
-      ...result,
-    };
-    scanHistory.unshift(newScan);
-    localStorage.setItem('scanHistory', JSON.stringify(scanHistory.slice(0, 50)));
   };
 
   const startScanning = async () => {
     setError('');
     setScanResult(null);
+    setSelectedImage(null);
 
     try {
       if (scannerRef.current) {
@@ -70,15 +80,9 @@ export default function Scanner() {
       await scannerRef.current.start(
         { facingMode: 'environment' },
         config,
-        (decodedText) => {
-          const status = analyzeSafety(decodedText);
-          const result = {
-            text: decodedText,
-            timestamp: new Date().toISOString(),
-            status,
-          };
+        async (decodedText) => {
+          const result = await checkSafetyAndSave(decodedText);
           setScanResult(result);
-          saveScanToHistory(result);
           stopScanning();
         },
         () => {}
@@ -106,6 +110,93 @@ export default function Scanner() {
   const resetScanner = () => {
     setScanResult(null);
     setError('');
+    setSelectedImage(null);
+  };
+
+  const scanFromFile = async (file) => {
+    setError('');
+    setScanResult(null);
+    setIsProcessing(true);
+
+    try {
+      // Send image to backend for processing
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await axios.post(`${config.apiUrl}/scan/image`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (response.data.url && response.data.status) {
+        const scanResult = {
+          text: response.data.url,
+          status: response.data.status,
+          timestamp: new Date().toISOString(),
+        };
+        setScanResult(scanResult);
+
+        // Save to history if authenticated
+        const token = localStorage.getItem('token');
+        if (token) {
+          await axios.post(`${config.apiUrl}/history`, {
+            url: response.data.url,
+            status: response.data.status,
+            timestamp: scanResult.timestamp,
+          });
+        }
+      } else {
+        setError('Failed to process image from backend.');
+        setIsProcessing(false);
+      }
+    } catch (err) {
+      console.error('Backend image scan error:', err);
+      // Fallback to client-side scanning if backend fails
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          const img = new Image();
+          img.onload = async () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            ctx.drawImage(img, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            if (code) {
+              const decodedText = code.data;
+              const scanResult = await checkSafetyAndSave(decodedText);
+              setScanResult(scanResult);
+            } else {
+              setError('No QR code found in the image.');
+              setIsProcessing(false);
+            }
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      } catch (fallbackErr) {
+        setError('Failed to scan image.');
+        setIsProcessing(false);
+      }
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Set image preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      // Scan the file
+      scanFromFile(file);
+    }
   };
 
   return (
@@ -138,10 +229,25 @@ export default function Scanner() {
                 <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Camera className="w-12 h-12 text-blue-600" />
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 mb-6">Click the button below to start scanning</p>
-                <Button onClick={startScanning} className="w-full sm:w-auto">
-                  Start Scanning
-                </Button>
+                <p className="text-gray-600 dark:text-gray-300 mb-6">Scan QR codes using camera or upload an image</p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                  <Button onClick={startScanning} className="w-full sm:w-auto">
+                    Start Camera Scan
+                  </Button>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      id="qr-file-input"
+                    />
+                    <Button variant="secondary" className="w-full sm:w-auto flex items-center gap-2">
+                      <Upload className="w-4 h-4" />
+                      Upload Image
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -155,6 +261,28 @@ export default function Scanner() {
                     Stop Scanning
                   </Button>
                 </div>
+              </div>
+            )}
+
+            {selectedImage && !scanResult && (
+              <div className="text-center py-4">
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 inline-block">
+                  <img
+                    src={selectedImage}
+                    alt="Selected for scanning"
+                    className="max-w-48 max-h-48 rounded-lg shadow-md"
+                  />
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">Selected image</p>
+                </div>
+              </div>
+            )}
+
+            {isProcessing && (
+              <div className="text-center py-8">
+                <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+                <p className="text-gray-600 dark:text-gray-300">Processing QR code...</p>
               </div>
             )}
 

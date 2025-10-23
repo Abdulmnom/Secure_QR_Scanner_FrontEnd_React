@@ -34,15 +34,14 @@ export default function Login() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      login({
-        fullName: 'User',
-        email: formData.email,
-        isGuest: false,
-      });
-      setLoading(false);
+    const result = await login(formData.email, formData.password);
+    setLoading(false);
+
+    if (result.success) {
       navigate('/scanner');
-    }, 1000);
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleGuestLogin = () => {

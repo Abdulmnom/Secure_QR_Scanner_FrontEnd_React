@@ -46,15 +46,14 @@ export default function Signup() {
 
     setLoading(true);
 
-    setTimeout(() => {
-      signup({
-        fullName: formData.fullName,
-        email: formData.email,
-        isGuest: false,
-      });
-      setLoading(false);
+    const result = await signup(formData.fullName, formData.email, formData.password);
+    setLoading(false);
+
+    if (result.success) {
       navigate('/scanner');
-    }, 1000);
+    } else {
+      setError(result.error);
+    }
   };
 
   const handleGuestLogin = () => {
