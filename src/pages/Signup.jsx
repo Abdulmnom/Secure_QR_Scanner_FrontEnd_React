@@ -1,13 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User, Users } from 'lucide-react';
+import { UserPlus, Mail, Lock, User, Users, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import InputField from '../components/InputField';
 import Button from '../components/Button';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signup, loginAsGuest } = useAuth();
+  const { signup, loginAsGuest, checkBackendHealth } = useAuth();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -16,6 +16,18 @@ export default function Signup() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [backendStatus, setBackendStatus] = useState({ checked: false, healthy: null });
+
+  useEffect(() => {
+    const checkBackend = async () => {
+      const health = await checkBackendHealth();
+      setBackendStatus({ checked: true, healthy: health.healthy });
+      if (!health.healthy && !error) {
+        setError(`Backend server issue: ${health.error}`);
+      }
+    };
+    checkBackend();
+  }, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -73,6 +85,23 @@ export default function Signup() {
             </div>
             <h1 className="text-2xl font-bold text-white text-center mt-4">Create Account</h1>
             <p className="text-blue-100 text-center mt-2">Sign up to start scanning QR codes</p>
+            
+            {/* Backend Status Indicator */}
+            {backendStatus.checked && (
+              <div className="mt-3 flex items-center justify-center">
+                {backendStatus.healthy ? (
+                  <div className="flex items-center text-green-200 text-xs">
+                    <Wifi className="w-3 h-3 mr-1" />
+                    <span>Backend Connected</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center text-red-200 text-xs">
+                    <WifiOff className="w-3 h-3 mr-1" />
+                    <span>Backend Disconnected</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="p-8">

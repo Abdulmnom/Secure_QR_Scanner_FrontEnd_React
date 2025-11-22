@@ -1,7 +1,7 @@
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function StatusBadge({ status }) {
-  const isSafe = status === 'safe';
+  const isSafe = status === 'safe' || status === 'trusted';
 
   return (
     <div

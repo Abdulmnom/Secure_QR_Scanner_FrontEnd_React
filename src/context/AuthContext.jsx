@@ -51,13 +51,30 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Login failed:', error);
-      return { success: false, error: error.response?.data?.message || 'Login failed' };
+      let errorMessage = 'Login failed';
+      
+      if (error.response) {
+        // Server responded with error status
+        errorMessage = error.response.data?.message || error.response.data?.error || `Server error (${error.response.status})`;
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to server. Please check if the backend is running.';
+      } else {
+        // Something else happened
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
   const signup = async (fullName, email, password) => {
     try {
-      const response = await axios.post(`${config.apiUrl}/auth/signup`, { fullName, email, password });
+      const response = await axios.post(`${config.apiUrl}/auth/signup`, { 
+        name: fullName,  // Backend expects 'name' not 'fullName'
+        email, 
+        password 
+      });
       const { token, user: userData } = response.data;
       localStorage.setItem('token', token);
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -65,7 +82,20 @@ export function AuthProvider({ children }) {
       return { success: true };
     } catch (error) {
       console.error('Signup failed:', error);
-      return { success: false, error: error.response?.data?.message || 'Signup failed' };
+      let errorMessage = 'Signup failed';
+      
+      if (error.response) {
+        // Server responded with error status
+        errorMessage = error.response.data?.message || error.response.data?.error || `Server error (${error.response.status})`;
+      } else if (error.request) {
+        // Request was made but no response received
+        errorMessage = 'Unable to connect to server. Please check if the backend is running.';
+      } else {
+        // Something else happened
+        errorMessage = error.message || 'Unknown error occurred';
+      }
+      
+      return { success: false, error: errorMessage };
     }
   };
 
@@ -86,8 +116,23 @@ export function AuthProvider({ children }) {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const checkBackendHealth = async () => {
+    try {
+      const response = await axios.get(`${config.apiUrl}`);
+      return { healthy: true, data: response.data };
+    } catch (error) {
+      console.error('Backend health check failed:', error);
+      return { 
+        healthy: false, 
+        error: error.response?.status ? 
+          `Server returned ${error.response.status}` : 
+          'Cannot connect to backend server'
+      };
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login, signup, loginAsGuest, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, signup, loginAsGuest, logout, checkBackendHealth, loading }}>
       {children}
     </AuthContext.Provider>
   );
