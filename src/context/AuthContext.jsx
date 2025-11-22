@@ -106,6 +106,7 @@ export function AuthProvider({ children }) {
       isGuest: true,
     };
     setUser(guestUser);
+    localStorage.setItem('user', JSON.stringify(guestUser));
     // No token for guest
     return { success: true };
   };

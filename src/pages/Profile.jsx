@@ -55,7 +55,7 @@ export default function Profile() {
                 <User className="w-10 h-10 text-blue-600" />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white dark:text-gray-100">{displayUser.fullName}</h1>
+                <h1 className="text-3xl font-bold text-white dark:text-gray-100">{displayUser.fullName || displayUser.name}</h1>
                 <p className="text-blue-100 dark:text-blue-200 mt-1">User Profile</p>
               </div>
             </div>
@@ -71,7 +71,7 @@ export default function Profile() {
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">Full Name</p>
-                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{displayUser.fullName}</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-semibold mt-1">{displayUser.fullName || displayUser.name}</p>
                 </div>
               </div>
 
