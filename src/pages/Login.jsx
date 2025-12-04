@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { LogIn, Mail, Lock, Users } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -7,7 +7,14 @@ import Button from '../components/Button';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { login, loginAsGuest } = useAuth();
+  const { user, login, loginAsGuest } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !user.isGuest) {
+      navigate('/scanner', { replace: true });
+    }
+  }, [user, navigate]);
   const [formData, setFormData] = useState({
     email: '',
     password: '',

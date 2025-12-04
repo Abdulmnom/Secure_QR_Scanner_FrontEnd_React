@@ -41,7 +41,11 @@ export default function History() {
     if (token) {
       // Authenticated user - fetch from backend
       try {
-        const response = await axios.get(`${config.apiUrl}/history`);
+        const response = await axios.get(`${config.apiUrl}/history`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
         setScanHistory(response.data);
       } catch (error) {
         console.error('Error fetching history:', error);
@@ -63,7 +67,11 @@ export default function History() {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          await axios.delete(`${config.apiUrl}/history`);
+          await axios.delete(`${config.apiUrl}/history`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           setScanHistory([]);
         } catch (error) {
           console.error('Error clearing history:', error);
@@ -81,7 +89,11 @@ export default function History() {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          await axios.delete(`${config.apiUrl}/history/${id}`);
+          await axios.delete(`${config.apiUrl}/history/${id}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           setScanHistory(scanHistory.filter((item) => item.id !== id));
         } catch (error) {
           console.error('Error deleting item:', error);

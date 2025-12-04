@@ -1,46 +1,121 @@
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { User, Mail, Calendar, Shield } from 'lucide-react';
 import axios from 'axios';
 import { config } from '../config';
 import Button from '../components/Button';
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const navigate = useNavigate();
   const [profileUser, setProfileUser] = useState(null);
+  const [isFetching, setIsFetching] = useState(false);
 
-  useEffect(() => {
-    if (!user || user.isGuest) {
-      navigate('/login');
-      return;
-    }
-
-    if (user && !user.isGuest) {
-      fetchProfile();
-    } else if (user && user.isGuest) {
-      setProfileUser(user);
-    }
-  }, [user, navigate]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
+    setIsFetching(true);
     try {
-      const response = await axios.get(`${config.apiUrl}/auth/me`);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setIsFetching(false);
+        return;
+      }
+      const response = await axios.get(`${config.apiUrl}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       setProfileUser(response.data);
     } catch (error) {
       console.error('Error fetching profile:', error);
       // Fallback to stored user data
-      setProfileUser(user);
+      const token = localStorage.getItem('token');
+      if (user && !user.isGuest) {
+        setProfileUser(user);
+      } else if (token) {
+        // Try to get from localStorage
+        const savedUser = localStorage.getItem('user');
+        if (savedUser && savedUser !== 'undefined') {
+          try {
+            const userData = JSON.parse(savedUser);
+            if (!userData.isGuest) {
+              setProfileUser(userData);
+            }
+          } catch (e) {
+            console.error('Error parsing saved user:', e);
+          }
+        }
+      }
+    } finally {
+      setIsFetching(false);
     }
-  };
+  }, [user]);
 
-  // Don't render anything while redirecting
-  if (!user || user.isGuest) {
-    return null;
+  useEffect(() => {
+    // Wait for loading to complete before making decisions
+    if (loading) {
+      return;
+    }
+
+    // Only redirect guests or users without token
+    const token = localStorage.getItem('token');
+    if (user && user.isGuest) {
+      navigate('/login');
+      return;
+    }
+
+    // If we have a token or authenticated user, fetch profile
+    if (token || (user && !user.isGuest)) {
+      // Only fetch if we don't already have profileUser
+      if (!profileUser) {
+        fetchProfile();
+      }
+    } else if (!user && !token) {
+      // No user and no token - redirect to login
+      navigate('/login');
+      return;
+    }
+  }, [user, loading, navigate, fetchProfile, profileUser]);
+
+  // Show loading only while AuthContext is loading OR while fetching profile
+  // But allow rendering if we have profileUser data
+  const token = localStorage.getItem('token');
+  const shouldShowLoading = loading || (isFetching && !profileUser);
+  const shouldRedirect = !loading && !token && !user && !profileUser;
+  
+  if (shouldRedirect) {
+    return null; // Will redirect in useEffect
+  }
+
+  if (shouldShowLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't show profile if user is guest
+  if (user && user.isGuest) {
+    return null; // Will redirect in useEffect
   }
 
   const displayUser = profileUser || user;
+  
+  // If we still don't have user data, show loading
+  if (!displayUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleLogout = () => {
     logout();

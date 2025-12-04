@@ -50,7 +50,12 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get(`${config.apiUrl}/auth/me`);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${config.apiUrl}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       const userData = response.data;
       setUser(userData);
       // Update localStorage with fresh user data

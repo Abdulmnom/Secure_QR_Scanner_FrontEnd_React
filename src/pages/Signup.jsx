@@ -7,7 +7,14 @@ import Button from '../components/Button';
 
 export default function Signup() {
   const navigate = useNavigate();
-  const { signup, loginAsGuest, checkBackendHealth } = useAuth();
+  const { user, signup, loginAsGuest, checkBackendHealth } = useAuth();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user && !user.isGuest) {
+      navigate('/scanner', { replace: true });
+    }
+  }, [user, navigate]);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
