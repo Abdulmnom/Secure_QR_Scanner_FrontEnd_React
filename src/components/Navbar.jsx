@@ -1,14 +1,18 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Camera, History, User, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
+import { Camera, History, User, LogOut, Menu, X, Sun, Moon, LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export default function Navbar() {
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Check if user is authenticated (has token or user data)
+  const isAuthenticated = user || localStorage.getItem('token');
+
 
   const handleLogout = () => {
     logout();
@@ -20,61 +24,83 @@ export default function Navbar() {
     setIsMenuOpen(false);
   };
 
-  if (!user) return null;
+  // Always render navbar, but show different content based on auth state
 
   return (
     <nav className="bg-white dark:bg-gray-900 shadow-md transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center gap-2">
-            <Camera className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+          <div className="flex items-center gap-2" onClick={() => navigate('/profile')}>
+            <Camera className="w-8 h-8 text-blue-600 dark:text-blue-400"  />
             <span className="text-xl font-bold text-gray-800 dark:text-white">Secure QR</span>
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center gap-6">
-            <Link
-              to="/scanner"
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              <Camera className="w-5 h-5" />
-              <span className="font-medium">Scanner</span>
-            </Link>
+           <div className="hidden md:flex items-center gap-6">
+             {isAuthenticated ? (
+               <>
+                 <Link
+                   to="/scanner"
+                   className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                 >
+                   <Camera className="w-5 h-5" />
+                   <span className="font-medium">Scanner</span>
+                 </Link>
 
-            <Link
-              to="/history"
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-            >
-              <History className="w-5 h-5" />
-              <span className="font-medium">History</span>
-            </Link>
+                 <Link
+                   to="/history"
+                   className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                 >
+                   <History className="w-5 h-5" />
+                   <span className="font-medium">History</span>
+                 </Link>
 
-            {!user.isGuest && (
-              <Link
-                to="/profile"
-                className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-              >
-                <User className="w-5 h-5" />
-                <span className="font-medium">Profile</span>
-              </Link>
-            )}
+                 {(!user || !user.isGuest) && (
+                   <Link
+                     to="/profile"
+                     className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                   >
+                     <User className="w-5 h-5" />
+                     <span className="font-medium">Profile</span>
+                   </Link>
+                 )}
 
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
+                 <button
+                   onClick={handleLogout}
+                   className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+                 >
+                   <LogOut className="w-5 h-5" />
+                   <span className="font-medium">Logout</span>
+                 </button>
+               </>
+             ) : (
+               <>
+                 <Link
+                   to="/login"
+                   className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                 >
+                   <LogIn className="w-5 h-5" />
+                   <span className="font-medium">Login</span>
+                 </Link>
 
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
-          </div>
+                 <Link
+                   to="/signup"
+                   className="flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                 >
+                   <UserPlus className="w-5 h-5" />
+                   <span className="font-medium">Signup</span>
+                 </Link>
+               </>
+             )}
+
+             <button
+               onClick={toggleTheme}
+               className="p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+             >
+               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+             </button>
+           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center gap-2">
@@ -96,46 +122,70 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Dropdown Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            <Link
-              to="/scanner"
-              onClick={closeMenu}
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <Camera className="w-5 h-5" />
-              <span className="font-medium">Scanner</span>
-            </Link>
+          {isMenuOpen && (
+            <div className="md:hidden pb-4 space-y-2">
+              {isAuthenticated ? (
+               <>
+                 <Link
+                   to="/scanner"
+                   onClick={closeMenu}
+                   className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                 >
+                   <Camera className="w-5 h-5" />
+                   <span className="font-medium">Scanner</span>
+                 </Link>
 
-            <Link
-              to="/history"
-              onClick={closeMenu}
-              className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-            >
-              <History className="w-5 h-5" />
-              <span className="font-medium">History</span>
-            </Link>
+                 <Link
+                   to="/history"
+                   onClick={closeMenu}
+                   className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                 >
+                   <History className="w-5 h-5" />
+                   <span className="font-medium">History</span>
+                 </Link>
 
-            {!user.isGuest && (
-              <Link
-                to="/profile"
-                onClick={closeMenu}
-                className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-              >
-                <User className="w-5 h-5" />
-                <span className="font-medium">Profile</span>
-              </Link>
-            )}
+                 {(!user || !user.isGuest) && (
+                   <Link
+                     to="/profile"
+                     onClick={closeMenu}
+                     className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                   >
+                     <User className="w-5 h-5" />
+                     <span className="font-medium">Profile</span>
+                   </Link>
+                 )}
 
-            <button
-              onClick={handleLogout}
-              className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
-          </div>
-        )}
+                 <button
+                   onClick={handleLogout}
+                   className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
+                 >
+                   <LogOut className="w-5 h-5" />
+                   <span className="font-medium">Logout</span>
+                 </button>
+               </>
+             ) : (
+               <>
+                 <Link
+                   to="/login"
+                   onClick={closeMenu}
+                   className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                 >
+                   <LogIn className="w-5 h-5" />
+                   <span className="font-medium">Login</span>
+                 </Link>
+
+                 <Link
+                   to="/signup"
+                   onClick={closeMenu}
+                   className="flex items-center gap-3 px-4 py-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                 >
+                   <UserPlus className="w-5 h-5" />
+                   <span className="font-medium">Signup</span>
+                 </Link>
+               </>
+             )}
+           </div>
+         )}
       </div>
     </nav>
   );

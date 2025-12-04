@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { History as HistoryIcon, ExternalLink, Trash2, Calendar } from 'lucide-react';
 import axios from 'axios';
 import { config } from '../config';
-import Navbar from '../components/Navbar';
 import StatusBadge from '../components/StatusBadge';
 import Button from '../components/Button';
 
@@ -11,8 +10,16 @@ export default function History() {
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
+    let user = null;
+
+    try {
+      const savedUser = localStorage.getItem('user');
+      user = savedUser && savedUser !== 'undefined' ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.error('Error parsing saved user data:', error);
+      // Clear invalid user data
+      localStorage.removeItem('user');
+    }
 
     if (token || (user && user.isGuest)) {
       fetchHistory();
@@ -21,8 +28,15 @@ export default function History() {
 
   const fetchHistory = async () => {
     const token = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
+    let user = null;
+
+    try {
+      const savedUser = localStorage.getItem('user');
+      user = savedUser && savedUser !== 'undefined' ? JSON.parse(savedUser) : null;
+    } catch (error) {
+      console.error('Error parsing saved user data:', error);
+      localStorage.removeItem('user');
+    }
 
     if (token) {
       // Authenticated user - fetch from backend
@@ -83,9 +97,7 @@ export default function History() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
-      <Navbar />
-
-      <div className="max-w-4xl mx-auto p-6 mt-8">
+      <div className="max-w-4xl mx-auto p-6">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-colors">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
             <div className="flex items-center justify-between">

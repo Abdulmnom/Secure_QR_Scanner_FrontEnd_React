@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { User, Mail, Calendar, Shield } from 'lucide-react';
 import axios from 'axios';
 import { config } from '../config';
-import Navbar from '../components/Navbar';
 import Button from '../components/Button';
 
 export default function Profile() {
@@ -13,12 +12,17 @@ export default function Profile() {
   const [profileUser, setProfileUser] = useState(null);
 
   useEffect(() => {
+    if (!user || user.isGuest) {
+      navigate('/login');
+      return;
+    }
+
     if (user && !user.isGuest) {
       fetchProfile();
     } else if (user && user.isGuest) {
       setProfileUser(user);
     }
-  }, [user]);
+  }, [user, navigate]);
 
   const fetchProfile = async () => {
     try {
@@ -31,8 +35,8 @@ export default function Profile() {
     }
   };
 
+  // Don't render anything while redirecting
   if (!user || user.isGuest) {
-    navigate('/login');
     return null;
   }
 
@@ -45,9 +49,7 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
-      <Navbar />
-
-      <div className="max-w-3xl mx-auto p-6 mt-8">
+      <div className="max-w-3xl mx-auto p-6">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden transition-colors">
           <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-8">
             <div className="flex items-center gap-4">

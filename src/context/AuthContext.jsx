@@ -13,15 +13,35 @@ export function AuthProvider({ children }) {
     if (token) {
       // Set axios default header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      // Fetch user data
+
+      // Try to restore user data from localStorage first for immediate UI update
+      const savedUser = localStorage.getItem('user');
+      if (savedUser && savedUser !== 'undefined') {
+        try {
+          const userData = JSON.parse(savedUser);
+          if (!userData.isGuest) { // Only restore non-guest users immediately
+            setUser(userData);
+          }
+        } catch (error) {
+          console.error('Error parsing saved user data:', error);
+          localStorage.removeItem('user');
+        }
+      }
+
+      // Then fetch fresh user data from server
       checkAuth();
     } else {
       // Check if user is guest
       const savedUser = localStorage.getItem('user');
-      if (savedUser) {
-        const userData = JSON.parse(savedUser);
-        if (userData.isGuest) {
-          setUser(userData);
+      if (savedUser && savedUser !== 'undefined') {
+        try {
+          const userData = JSON.parse(savedUser);
+          if (userData.isGuest) {
+            setUser(userData);
+          }
+        } catch (error) {
+          console.error('Error parsing saved guest user data:', error);
+          localStorage.removeItem('user');
         }
       }
       setLoading(false);
@@ -31,10 +51,16 @@ export function AuthProvider({ children }) {
   const checkAuth = async () => {
     try {
       const response = await axios.get(`${config.apiUrl}/auth/me`);
-      setUser(response.data);
+      const userData = response.data;
+      setUser(userData);
+      // Update localStorage with fresh user data
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
     } catch (error) {
       console.error('Auth check failed:', error);
       localStorage.removeItem('token');
+      localStorage.removeItem('user');
       delete axios.defaults.headers.common['Authorization'];
     } finally {
       setLoading(false);
@@ -46,6 +72,9 @@ export function AuthProvider({ children }) {
       const response = await axios.post(`${config.apiUrl}/auth/login`, { email, password });
       const { token, user: userData } = response.data;
       localStorage.setItem('token', token);
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(userData);
       return { success: true };
@@ -70,13 +99,16 @@ export function AuthProvider({ children }) {
 
   const signup = async (fullName, email, password) => {
     try {
-      const response = await axios.post(`${config.apiUrl}/auth/signup`, { 
+      const response = await axios.post(`${config.apiUrl}/auth/signup`, {
         name: fullName,  // Backend expects 'name' not 'fullName'
-        email, 
-        password 
+        email,
+        password
       });
       const { token, user: userData } = response.data;
       localStorage.setItem('token', token);
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+      }
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       setUser(userData);
       return { success: true };
@@ -114,6 +146,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     delete axios.defaults.headers.common['Authorization'];
   };
 
